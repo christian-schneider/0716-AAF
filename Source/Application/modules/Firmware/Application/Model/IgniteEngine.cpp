@@ -58,6 +58,19 @@ std::unique_ptr<SettingsMidiMachineControlCnfg> _settingsMidiMachineControlCnfg 
 
 std::unique_ptr<SequenceManager> _pSequenceManager = nullptr;
 
+
+// Desktop debugging aid: IGNITE_TRACE=1 in the environment prints every parameter
+// message that passes through the engine (UI -> module and module -> UI).
+#include <cstdlib>
+#include <iostream>
+static const bool kTraceParams = (std::getenv("IGNITE_TRACE") != nullptr);
+static inline void traceParam(const char* kind, moduleId_t src, moduleId_t dst, paramId_t param, bool isPlayMode)
+{
+	if (kTraceParams)
+		std::cout << "[trace] " << kind << " src=" << (int)src << " dst=" << (int)dst
+			<< " param=" << (int)param << (isPlayMode ? " play" : "") << std::endl;
+}
+
 IDevice* EngineInit (void)
 {
 	//Create engine
@@ -300,6 +313,7 @@ void IgniteEngine::engineThreadFunc (void)
 	while (true)
 	{
 		engineMsgQ.get (msg, TimeOut::kWaitForever);
+		traceParam("dispatch", msg.moduleSrc, msg.moduleDst, msg.param, msg.isPlayMode);
 		if (_modules.find (msg.moduleDst) != _modules.end ())
 		{
 			if (msg.messageType == MsgType::msgSetParam)
@@ -319,6 +333,8 @@ void IgniteEngine::engineThreadFunc (void)
 				_modules[msg.moduleDst]->SetCommandParam (msg.moduleSrc, msg.param, msg.isPlayMode);
 			}
 		}
+		else if (kTraceParams)
+			std::cout << "[trace] dropped: no module " << (int)msg.moduleDst << std::endl;
 	}
 }
 void IgniteEngine::addListener (IListener* listener)
@@ -394,6 +410,7 @@ void IgniteEngine::setParam (moduleId_t moduleSrc, moduleId_t moduleDst, paramId
 // send commands bypassing queue - Blocking call
 bool IgniteEngine::SetCommand (moduleId_t moduleSrc, moduleId_t moduleDst, paramId_t param, AnyType value, bool isPlayMode)
 {
+	traceParam("command", moduleSrc, moduleDst, param, isPlayMode);
 	if (_modules.find (moduleDst) != _modules.end ())
 	{
 		_modules[moduleDst]->setParam (moduleSrc, param, value, isPlayMode);
@@ -506,6 +523,7 @@ void IgniteEngine::onParameterChanged (moduleId_t moduleSrc, ParameterBase* para
 
 void IgniteEngine::SendResponse (moduleId_t module, moduleId_t moduleSrc, paramId_t param, const AnyType& value)
 {
+	traceParam("response", module, moduleSrc, param, false);
 	ParameterBase* pParam = _modules[module]->FindParameter (param);
 	if (pParam != NULL)
 	{

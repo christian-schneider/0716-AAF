@@ -2022,6 +2022,7 @@ void SongManager::playSong(int32_t sceneId)
 		//TODO warn
 		return;
 	}
+	std::cout << "SongManager::playSong: scene " << sceneId << " playing=" << _isSongPlaying << " paused=" << _isSongPaused << std::endl;
 
 	// check if already playing
 	if (_isSongPlaying == false)
@@ -5083,8 +5084,15 @@ void SongManager::startJuceAudioCallback (void)
 	juce::AudioDeviceManager::AudioDeviceSetup setup;
 	setup.sampleRate = (double)INTERNAL_AUDIO_SAMPLE_RATE;
 	setup.bufferSize = (int)INTERNAL_AUDIO_20MS_BLOCK_SIZE;
-	if(dm != nullptr)
-		dm->initialise(0, 2, nullptr, true, {}, &setup);// no input, stereo out,...
+	if (dm != nullptr)
+	{
+		auto err = dm->initialise(0, 2, nullptr, true, {}, &setup);// no input, stereo out,...
+		auto* dev = dm->getCurrentAudioDevice();
+		std::cout << "SongManager: audio init " << (err.isEmpty() ? "ok" : err.toStdString())
+			<< " device=" << (dev ? dev->getName().toStdString() : "none")
+			<< " rate=" << (dev ? dev->getCurrentSampleRate() : 0.0)
+			<< " block=" << (dev ? dev->getCurrentBufferSizeSamples() : 0) << std::endl;
+	}
 }
 
 void SongManager::stopJuceAudioCallback (void)
