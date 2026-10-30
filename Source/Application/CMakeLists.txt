@@ -19,6 +19,18 @@ if(USE_VALUE_TREE_DEBUGGER)
   add_definitions(-DUSE_VALUE_TREE_DEBUGGER=0)
 endif()
 
+# Keyboard/mouse front-panel simulator for desktop builds without the MCU (FP_TEST_KEYBRD).
+# Default on for macOS, where there is no other front-panel input path; opt in elsewhere.
+if(APPLE)
+    set(IGNITE_KEY_SIMULATOR_DEFAULT ON)
+else()
+    set(IGNITE_KEY_SIMULATOR_DEFAULT OFF)
+endif()
+option(IGNITE_KEY_SIMULATOR "Build the keyboard/mouse front-panel key simulator (desktop only)" ${IGNITE_KEY_SIMULATOR_DEFAULT})
+if(IGNITE_KEY_SIMULATOR)
+    add_definitions(-DFP_TEST_KEYBRD=1)
+endif()
+
 set(ENABLE_HARDWARE_TEST TRUE)
 
 if(ENABLE_HARDWARE_TEST)
