@@ -1,6 +1,7 @@
 #include "../Board/CHardwareTimer.h"
 
 #ifdef __APPLE__
+#include <cstdlib>
 #include <pthread.h>
 #include <sched.h>
 #include <cerrno>
@@ -285,6 +286,8 @@ void CHardwareTimer::posixTimerThread(void)
     if (pthread_setschedparam(pthread_self(), policy, &param) != 0)
         std::cerr << "CHardwareTimer: pthread_setschedparam failed: " << strerror(errno) << std::endl;
 
+    const bool traceTicks = (std::getenv("IGNITE_TRACE") != nullptr);
+
     while (_running)
     {
         if (!_activeCB)
@@ -301,6 +304,20 @@ void CHardwareTimer::posixTimerThread(void)
                 _nextExpiry = now + microseconds(_intervalus);
             if (_callback)
                 _callback(_context);
+
+            if (traceTicks)
+            {
+                static auto batchStart = now;
+                static uint32_t ticks = 0;
+                if (++ticks == 96)
+                {
+                    std::cout << "CHardwareTimer: 96 ticks in "
+                              << duration_cast<milliseconds>(steady_clock::now() - batchStart).count()
+                              << " ms, interval " << _intervalus << " us" << std::endl;
+                    ticks = 0;
+                    batchStart = steady_clock::now();
+                }
+            }
         }
         else
         {
