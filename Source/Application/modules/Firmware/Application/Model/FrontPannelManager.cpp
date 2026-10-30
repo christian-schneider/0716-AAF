@@ -115,7 +115,7 @@ public:
 	void pushMessage(const SysMessage& msg)
 	{
 		std::lock_guard<std::mutex> lock(queueMutex);
-		pushMessage(msg);
+		sysMessageList.push_back(msg);
 	}
 	// Clicking an LED box presses the key it belongs to (shift-click = reverse step for rotaries)
 	void queueKeyPressForLed(int ledIndex)
