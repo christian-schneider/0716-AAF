@@ -891,7 +891,12 @@ void FrontPannelManager::run()
 			continue;
 		}
 		if (DataToProcess < 4)
+		{
+#if !defined FP_UART_LINUX && !defined FP_REMOTE_CLIENT_RECIVE && !defined FP_REMOTE_CLIENT_RECIVE_WIN
+			wait(10); // desktop build without MCU: nothing will arrive, do not spin
+#endif
 			continue;
+		}
 
 		SysMessage _sysMessage;
 		_sysMessage.Direction = DIRECTION_IN;
@@ -1351,6 +1356,12 @@ void FrontPannelManager::FrontPannelExternalReadThreadFunction(void)
 				}
 			}//while loop
 		}
+#endif
+#if !defined FP_UART_LINUX && !defined FP_TEST_KEYBRD && !defined FP_REMOTE_CLIENT_RECIVE && !defined FP_REMOTE_CLIENT_RECIVE_WIN
+		// No front-panel input source is compiled in (desktop build without MCU UART).
+		// Idle instead of spinning: an empty infinite loop burns a core and clang may
+		// treat it as undefined behaviour and emit a trap (SIGTRAP on macOS).
+		FrontPannelExternalReadThread.delayMs(FRONT_PANEL_THREAD_WAIT_1_SEC);
 #endif
 	}
 }
