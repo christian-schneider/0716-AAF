@@ -2679,8 +2679,11 @@ void FrontPannelManager::getIntStorageStatus()
 {
 #if defined FP_UART_LINUX
 	auto intStorage = fs::space("/data/ignite/");
-#else
+#elif defined _WIN32
 	auto intStorage = fs::space("C:/");
+#else
+	std::error_code ec; // macOS/Linux desktop: root volume; non-throwing overload (the throwing one aborted the app)
+	auto intStorage = fs::space("/", ec);
 #endif
 	intTotalSize = static_cast<int>((intStorage.capacity / (1024 * 1024)));
 	intFreeSize = static_cast<int>((intStorage.free / (1024 * 1024)));
@@ -2715,8 +2718,11 @@ void FrontPannelManager::getUsbStorageStatus()
 	{
 #if defined FP_UART_LINUX
 		auto usbStorage = fs::space("/mnt/flash/");
-#else
+#elif defined _WIN32
 		auto usbStorage = fs::space("C:/");
+#else
+		std::error_code ec;
+		auto usbStorage = fs::space("/Volumes", ec);
 #endif
 		usbTotalSize = static_cast<int>((usbStorage.capacity / (1024 * 1024)));
 		usbFreeSize = static_cast<int>((usbStorage.free / (1024 * 1024)));

@@ -1,0 +1,29 @@
+diff --git a/modules/juce_gui_basics/native/juce_NSViewComponentPeer_mac.mm b/modules/juce_gui_basics/native/juce_NSViewComponentPeer_mac.mm
+index cdf7c363ee..bf08f86492 100644
+--- a/modules/juce_gui_basics/native/juce_NSViewComponentPeer_mac.mm
++++ b/modules/juce_gui_basics/native/juce_NSViewComponentPeer_mac.mm
+@@ -1579,6 +1579,24 @@ void closeInputMethodContext() override
+     {
+         stringBeingComposed.clear();
+ 
++        // AppKit requires NSTextInputContext calls on the main thread. JUCE lets other
++        // threads change component focus while holding the MessageManagerLock, and on
++        // macOS 15+ that trips a dispatch_assert_queue in HIToolbox (SIGTRAP). Hop to
++        // the message thread in that case instead of crashing.
++        if (! MessageManager::getInstance()->isThisTheMessageThread())
++        {
++            Component::SafePointer<Component> safeComponent (&component);
++
++            MessageManager::callAsync ([safeComponent]
++            {
++                if (safeComponent != nullptr)
++                    if (auto* peer = safeComponent->getPeer())
++                        peer->closeInputMethodContext();
++            });
++
++            return;
++        }
++
+         if (const auto* inputContext = [view inputContext])
+             [inputContext discardMarkedText];
+     }
